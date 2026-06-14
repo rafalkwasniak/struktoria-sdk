@@ -33,7 +33,7 @@ final class Config
 
     /**
      * Build a full module endpoint URL, e.g. moduleUrl('documents') =>
-     * https://struktoria-dev.agidot.eu/v1/documents/api
+     * https://your-struktoria-host/v1/documents/api
      *
      * @param string $module One of: platform, documents, rag.
      */
