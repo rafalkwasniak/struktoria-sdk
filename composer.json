@@ -2,7 +2,8 @@
     "name": "rafalkwasniak/struktoria-sdk",
     "description": "PHP SDK / client for the Struktoria (agidot) API: authentication, Documents and RAG.",
     "type": "library",
-    "license": "proprietary",
+    "license": "MIT",
+    "homepage": "https://github.com/rafalkwasniak/struktoria-sdk",
     "keywords": ["struktoria", "agidot", "sdk", "rag", "documents", "api-client"],
     "authors": [
         {

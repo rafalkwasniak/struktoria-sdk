@@ -1,5 +1,8 @@
 # Struktoria SDK
 
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+![PHP](https://img.shields.io/badge/PHP-%5E8.0-777bb4.svg)
+
 A lightweight, framework-agnostic PHP client for the **Struktoria** (agidot) API.
 It wraps authentication, the **Documents** module (hierarchical file storage:
 bucket → folder → file) and the **RAG** module (vector knowledge base: semantic
@@ -197,7 +200,13 @@ try {
 }
 ```
 
+## Contributing
+
+Issues and pull requests are welcome. The API surface mirrors the Struktoria
+modules closely, so when extending it please keep the thin-wrapper style: one
+method per endpoint, explicit exceptions, no hidden state.
+
 ## License
 
-Proprietary — see [LICENSE](LICENSE). The licensing terms will be revisited if
-and when the package is published publicly.
+Released under the [MIT License](LICENSE) — free to use, modify and distribute,
+with attribution. © 2026 Rafal Kwasniak.
