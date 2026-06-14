@@ -1,0 +1,24 @@
+{
+    "name": "rafalkwasniak/struktoria-sdk",
+    "description": "PHP SDK / client for the Struktoria (agidot) API: authentication, Documents and RAG.",
+    "type": "library",
+    "license": "proprietary",
+    "keywords": ["struktoria", "agidot", "sdk", "rag", "documents", "api-client"],
+    "authors": [
+        {
+            "name": "Rafal Kwasniak",
+            "email": "rafal@kwasniak.org"
+        }
+    ],
+    "require": {
+        "php": "^8.0",
+        "ext-curl": "*",
+        "ext-json": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Struktoria\\Sdk\\": "src/"
+        }
+    },
+    "minimum-stability": "stable"
+}
