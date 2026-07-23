@@ -416,8 +416,14 @@ final class StruktoriaClient
     /**
      * Ask a question against a single RAG knowledge bucket. Returns
      * { answer, chunks: [{ nodeName, bucketName, score, content, ... }] }.
+     *
+     * $tags restricts retrieval to chunks from documents carrying any of the
+     * given tags (OR, case-insensitive). Null/empty = no filter. When both a
+     * profile and $tags are set, $tags wins.
+     *
+     * @param string[]|null $tags
      */
-    public function ragChat(string $ragBucketId, string $question, ?int $topK = null, ?string $profileId = null): array
+    public function ragChat(string $ragBucketId, string $question, ?int $topK = null, ?string $profileId = null, ?array $tags = null): array
     {
         $body = ['question' => $question];
         if (null !== $topK) {
@@ -426,13 +432,18 @@ final class StruktoriaClient
         if (null !== $profileId) {
             $body['profileId'] = $profileId;
         }
+        if (null !== $tags && [] !== $tags) {
+            $body['tags'] = array_values($tags);
+        }
 
         return $this->postRag('/buckets/'.$ragBucketId.'/chat', $body);
     }
 
     /**
      * Ask a question across all tenant knowledge (or a subset via
-     * $options['bucketIds']). $options may also carry topK, profileId.
+     * $options['bucketIds']). $options may also carry topK, profileId and
+     * tags (string[] - OR, case-insensitive; restricts retrieval to documents
+     * with any of those tags; overrides the profile's tags when both are set).
      *
      * @param array<string, mixed> $options
      */
@@ -446,7 +457,9 @@ final class StruktoriaClient
     /**
      * Semantic vector search (no LLM): returns the best-matching chunks with a
      * similarity score. $options: topK, envs, sourceTypes, bucketIds,
-     * searchMode (EmbeddingOnly|Hybrid|FullBucket), embeddingWeight, keywordWeight.
+     * searchMode (EmbeddingOnly|Hybrid|FullBucket), embeddingWeight, keywordWeight,
+     * tags (string[] - OR, case-insensitive; only chunks from documents with any
+     * of those tags). Each result carries the source document's tags in metaJson.
      *
      * @param array<string, mixed> $options
      */
@@ -485,6 +498,17 @@ final class StruktoriaClient
         }
 
         return $this->postRag('/buckets', $body);
+    }
+
+    /**
+     * List the distinct tags present in a RAG bucket, each with the number of
+     * documents carrying it. Returns [{ tag, nodeCount }, ...]. Handy for
+     * building a tag filter UI and for checking whether freshly changed tags
+     * have finished syncing.
+     */
+    public function bucketTags(string $bucketId): array
+    {
+        return $this->getRag('/buckets/'.$bucketId.'/tags', []);
     }
 
     // -----------------------------------------------------------------
@@ -574,7 +598,9 @@ final class StruktoriaClient
     }
 
     /**
-     * Create a chat profile.
+     * Create a chat profile. $data may carry tags (string[]) to pin a retrieval
+     * filter to the profile, so callers only send profileId afterwards - e.g.
+     * one profile per training. Requests that pass their own tags override it.
      *
      * @param array<string, mixed> $data
      */
@@ -617,6 +643,9 @@ final class StruktoriaClient
     /**
      * Open a chat session. $options: profileId, bucketIds, expiresAt.
      * Returns a ChatSessionDto incl. the `accessToken`.
+     *
+     * Tag filtering in a session is inherited from its profile: assign a
+     * profileId whose profile carries tags. (See createProfile().)
      *
      * @param array<string, mixed> $options
      */

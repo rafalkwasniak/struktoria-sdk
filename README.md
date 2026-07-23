@@ -140,6 +140,27 @@ $session = $client->createSession(['bucketIds' => [$ragBucketId]]);
 $client->sessionMessage($session['accessToken'], 'And how does ingest work?');
 ```
 
+### Filtering by tags
+
+Tag your documents (see the Documents metadata example above) and restrict
+retrieval to specific tags — one bucket can then hold several trainings. The
+filter is OR and case-insensitive; omit it to search everything.
+
+```php
+// List the tags available in a bucket (+ how many documents carry each)
+$client->bucketTags($ragBucketId); // [['tag' => 'onboarding', 'nodeCount' => 12], ...]
+
+// Search / chat limited to documents tagged 'onboarding' or 'specialist-1'
+$tags = ['onboarding', 'specialist-1'];
+$client->search('evacuation rules', ['bucketIds' => [$ragBucketId], 'tags' => $tags]);
+$client->ragChat($ragBucketId, 'What do I do before entering the hall?', null, null, $tags);
+$client->chat('...', ['bucketIds' => [$ragBucketId], 'tags' => $tags]);
+
+// Pin tags to a profile (then callers only pass profileId — also for sessions)
+$profile = $client->createProfile(['name' => 'Bot: Specialist 1', 'tags' => $tags]);
+$session = $client->createSession(['bucketIds' => [$ragBucketId], 'profileId' => $profile['id']]);
+```
+
 RAG answers from the **text content** of documents — not from the file/folder
 structure. The SDK also covers chat profiles (`profiles()`, `seedProfiles()`,
 CRUD), sources (`sources()`, `ingestSource()`, `indexSource()`, `ingestFile()`,
