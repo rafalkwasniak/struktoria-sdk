@@ -641,11 +641,12 @@ final class StruktoriaClient
     // -----------------------------------------------------------------
 
     /**
-     * Open a chat session. $options: profileId, bucketIds, expiresAt.
+     * Open a chat session. $options: profileId, bucketIds, expiresAt, tags.
      * Returns a ChatSessionDto incl. the `accessToken`.
      *
-     * Tag filtering in a session is inherited from its profile: assign a
-     * profileId whose profile carries tags. (See createProfile().)
+     * Pass tags (string[]) to filter the whole session's retrieval directly
+     * (OR, case-insensitive); or omit them and let the session inherit the
+     * assigned profile's tags. (See createProfile().)
      *
      * @param array<string, mixed> $options
      */

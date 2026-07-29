@@ -156,7 +156,10 @@ $client->search('evacuation rules', ['bucketIds' => [$ragBucketId], 'tags' => $t
 $client->ragChat($ragBucketId, 'What do I do before entering the hall?', null, null, $tags);
 $client->chat('...', ['bucketIds' => [$ragBucketId], 'tags' => $tags]);
 
-// Pin tags to a profile (then callers only pass profileId — also for sessions)
+// Filter a whole chat session (keeps history) by tags
+$session = $client->createSession(['bucketIds' => [$ragBucketId], 'tags' => $tags]);
+
+// ...or pin tags to a profile, then callers only pass profileId
 $profile = $client->createProfile(['name' => 'Bot: Specialist 1', 'tags' => $tags]);
 $session = $client->createSession(['bucketIds' => [$ragBucketId], 'profileId' => $profile['id']]);
 ```
