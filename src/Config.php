@@ -57,6 +57,15 @@ final class Config
         return $this->moduleUrl('rag');
     }
 
+    /**
+     * Background jobs. Ingest, index, delete and move all answer with a job id
+     * and finish later; this module is where you ask how they went.
+     */
+    public function asyncUrl(): string
+    {
+        return $this->moduleUrl('async');
+    }
+
     public function basicLogin(): string
     {
         return $this->basicLogin;

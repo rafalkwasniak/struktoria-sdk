@@ -544,6 +544,10 @@ final class StruktoriaClient
 
     /**
      * Queue an ingest job (pull + process data from the source).
+     *
+     * The ingest queues its own index job when it finishes, so indexSource()
+     * is not needed alongside it; that job's id is carried in this one's
+     * result (see jobResult()).
      */
     public function ingestSource(string $sourceId): array
     {
@@ -552,10 +556,50 @@ final class StruktoriaClient
 
     /**
      * Queue an index job (build embeddings for already-ingested data).
+     *
+     * Kept for compatibility and for re-indexing without a fresh ingest;
+     * an ingest now queues one of these by itself.
      */
     public function indexSource(string $sourceId): array
     {
         return $this->postRag('/sources/'.$sourceId.'/index', []);
+    }
+
+    /**
+     * Delete a knowledge bucket together with its sources, nodes and chunks.
+     * Files in Documents are not touched.
+     */
+    public function deleteRagBucket(string $bucketId): array
+    {
+        return $this->deleteRag('/buckets/'.$bucketId);
+    }
+
+    /**
+     * Delete a source. With $withNodes the knowledge nodes it produced go too.
+     * Files in Documents are not touched either way.
+     */
+    public function deleteSource(string $sourceId, bool $withNodes = false): array
+    {
+        return $this->deleteRag(
+            '/sources/'.$sourceId,
+            $withNodes ? ['withNodes' => 'true'] : []
+        );
+    }
+
+    /**
+     * Indexing state of a whole knowledge bucket in one call. Returns
+     * { nodes, indexed, pending, errors, chunks, sources, lastIndexedAt,
+     * errorNodes }.
+     *
+     * `chunks: 0` against a non-zero `nodes` is the state worth watching for:
+     * the documents and their text are there, but nothing was embedded, so
+     * retrieval answers nothing at all. `errorNodes` then says why. Per-node
+     * state is also on each node in a knowledge listing, under `meta.status`
+     * (pending, indexed, error) with `meta.error`.
+     */
+    public function bucketStatus(string $bucketId): array
+    {
+        return $this->getRag('/buckets/'.$bucketId.'/status', []);
     }
 
     /**
@@ -762,11 +806,37 @@ final class StruktoriaClient
     /**
      * Delete knowledge nodes.
      *
+     * This un-indexes a node but leaves its file in Documents, so the next
+     * ingest brings the node back. Delete the file as well to be rid of it.
+     *
      * @param string[] $nodeIds
      */
     public function deleteKnowledge(array $nodeIds): array
     {
         return $this->deleteRagJson('/knowledge', ['nodeIds' => array_values($nodeIds)]);
+    }
+
+    // -----------------------------------------------------------------
+    // Background jobs
+    // -----------------------------------------------------------------
+
+    /**
+     * Status and progress of a job. Ingest, index, delete and move all answer
+     * with a job id and finish later - this is how you find out whether they
+     * finished at all.
+     */
+    public function jobStatus(string $jobId): array
+    {
+        return $this->getAsync('/status/'.$jobId);
+    }
+
+    /**
+     * Result of a finished job. An ingest carries the id of the index job it
+     * queued after itself.
+     */
+    public function jobResult(string $jobId): array
+    {
+        return $this->getAsync('/result/'.$jobId);
     }
 
     // -----------------------------------------------------------------
@@ -847,10 +917,21 @@ final class StruktoriaClient
         return $this->expectJson($response);
     }
 
-    private function deleteRag(string $path): array
+    private function deleteRag(string $path, array $query = []): array
     {
         $response = $this->http->delete(
             $this->config->ragUrl().$path,
+            $query,
+            $this->authHeaders()
+        );
+
+        return $this->expectJson($response);
+    }
+
+    private function getAsync(string $path): array
+    {
+        $response = $this->http->get(
+            $this->config->asyncUrl().$path,
             [],
             $this->authHeaders()
         );

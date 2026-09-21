@@ -164,6 +164,42 @@ $profile = $client->createProfile(['name' => 'Bot: Specialist 1', 'tags' => $tag
 $session = $client->createSession(['bucketIds' => [$ragBucketId], 'profileId' => $profile['id']]);
 ```
 
+### Checking that a bucket is actually indexed
+
+Retrieval answers nothing at all when the documents are in place but no
+embeddings were built, and from the outside that looks exactly like a healthy
+knowledge base. One call tells them apart:
+
+```php
+$client->bucketStatus($ragBucketId);
+// ['nodes' => 3, 'indexed' => 3, 'pending' => 0, 'errors' => 0,
+//  'chunks' => 3, 'sources' => 1, 'lastIndexedAt' => '...', 'errorNodes' => []]
+```
+
+`chunks: 0` against a non-zero `nodes` is the state to watch for; `errorNodes`
+says why. Per-node state is on each node of a knowledge listing too, under
+`meta.status` (pending, indexed, error) with `meta.error`.
+
+### Jobs, and cleaning up
+
+Ingest, index, delete and move are queued: they answer with a job id and finish
+later. An ingest queues its own index job afterwards, so you rarely need
+`indexSource()` yourself — the index job's id comes back in the ingest result.
+
+```php
+$job = $client->ingestSource($sourceId);
+$client->jobStatus($job['jobId']);  // ['status' => 'Completed', 'progress' => 100, ...]
+$client->jobResult($job['jobId']);
+
+// Remove a knowledge bucket (with its sources, nodes and chunks) or one source.
+// Neither touches the files in Documents.
+$client->deleteRagBucket($ragBucketId);
+$client->deleteSource($sourceId, true); // true = drop its knowledge nodes too
+```
+
+Deleting a knowledge node un-indexes it but leaves the file, so the next ingest
+brings it back; delete the file as well to be rid of it for good.
+
 RAG answers from the **text content** of documents — not from the file/folder
 structure. The SDK also covers chat profiles (`profiles()`, `seedProfiles()`,
 CRUD), sources (`sources()`, `ingestSource()`, `indexSource()`, `ingestFile()`,
